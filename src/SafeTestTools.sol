@@ -3,11 +3,10 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import "forge-std/Test.sol";
 import "solady/utils/LibSort.sol";
-import "safe-contracts/GnosisSafe.sol";
-import "safe-contracts/proxies/GnosisSafeProxyFactory.sol";
-import "safe-contracts/examples/libraries/SignMessage.sol";
+import "safe-contracts/Safe.sol";
+import "safe-contracts/proxies/SafeProxyFactory.sol";
+import "safe-contracts/libraries/SignMessageLib.sol";
 import "./CompatibilityFallbackHandler_1_3_0.sol";
-import "safe-contracts/examples/libraries/SignMessage.sol";
 
 address constant VM_ADDR = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
 bytes12 constant ADDR_MASK = 0xffffffffffffffffffffffff;
@@ -79,7 +78,7 @@ function sortPKsByComputedAddress(uint256[] memory _pks) pure returns (uint256[]
 }
 
 // collapsed interface that includes comapatibilityfallback handler calls
-abstract contract DeployedSafe is GnosisSafe, CompatibilityFallbackHandler {}
+abstract contract DeployedSafe is Safe, CompatibilityFallbackHandler {}
 
 struct AdvancedSafeInitParams {
     bool includeFallbackHandler;
@@ -290,8 +289,8 @@ library SafeTestLib {
 contract SafeTestTools {
     using SafeTestLib for SafeInstance;
 
-    GnosisSafe internal singleton = new GnosisSafe();
-    GnosisSafeProxyFactory internal proxyFactory = new GnosisSafeProxyFactory();
+    Safe internal singleton = new Safe();
+    SafeProxyFactory internal proxyFactory = new SafeProxyFactory();
     CompatibilityFallbackHandler internal handler = new CompatibilityFallbackHandler();
 
     SafeInstance[] internal instances;
@@ -314,13 +313,12 @@ contract SafeTestTools {
             }
         }
 
+        require(advancedParams.saltNonce != 0);
         DeployedSafe safe0 = DeployedSafe(
             payable(
-                advancedParams.saltNonce != 0
-                    ? proxyFactory.createProxyWithNonce(
+                    proxyFactory.createProxyWithNonce(
                         address(singleton), advancedParams.initData, advancedParams.saltNonce
                     )
-                    : proxyFactory.createProxy(address(singleton), advancedParams.initData)
             )
         );
 
